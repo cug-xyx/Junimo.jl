@@ -3,7 +3,7 @@ name: ci
 on:
   push:
     branches:
-      - main   # ⚠️注意：如果你的主分支叫 master，请把这里改成 master
+      - master
     tags: '*'
   pull_request:
 
@@ -18,19 +18,17 @@ jobs:
       
       - uses: julia-actions/setup-julia@v2
         with:
-          version: '1' # 自动使用最新的稳定版 v1.x
+          version: '1.11'
           
       - uses: julia-actions/cache@v2
-      
-      # Step 1: 帮你把当前包安装好 (替代了你手动写的 Pkg.dev)
+
       - name: Install package
         uses: julia-actions/julia-buildpkg@v1
-      
-      # Step 2: 专门用于构建文档的 Action (比手动写脚本更稳)
+
       - name: Build and Deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # 通常不需要，除非你在做跨仓库部署
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
         shell: julia --project=docs {0}
         run: |
           using Pkg
