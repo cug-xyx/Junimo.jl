@@ -1,4 +1,4 @@
-name: ci
+name: Documentation
 
 on:
   push:
@@ -18,13 +18,10 @@ jobs:
       
       - uses: julia-actions/setup-julia@v2
         with:
-          version: '1.11'
+          version: '1'
           
       - uses: julia-actions/cache@v2
-
-      - name: Install package
-        uses: julia-actions/julia-buildpkg@v1
-
+      
       - name: Build and Deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -32,9 +29,9 @@ jobs:
         shell: julia --project=docs {0}
         run: |
           using Pkg
-          Pkg.develop(PackageSpec(path=pwd())) # 把主包链接到文档环境
+          Pkg.develop(PackageSpec(path=pwd()))
           Pkg.instantiate()
           using Documenter: doctest
           using Junimo
-          doctest(Junimo) # 可选：运行文档里的测试例子
-          include("docs/make.jl")
+          doctest(Junimo) 
+          include(joinpath(pwd(), "docs", "make.jl"))
