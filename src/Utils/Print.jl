@@ -3,8 +3,6 @@ export
   red, green, blue, purple
 
 
-export cprint, red, green, blue, purple
-
 """
     cprint(text, code)
 
