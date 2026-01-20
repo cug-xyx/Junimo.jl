@@ -1,9 +1,9 @@
-name: Documentation
+name: ci
 
 on:
   push:
     branches:
-      - master
+      - main   # ⚠️注意：如果你的主分支叫 master，请把这里改成 master
     tags: '*'
   pull_request:
 
@@ -15,19 +15,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: julia-actions/setup-julia@v2
         with:
-          version: '1'
+          version: '1' # 自动使用最新的稳定版 v1.x
+          
       - uses: julia-actions/cache@v2
-      - name: Configure doc environment
-        shell: julia --project=docs {0}
-        run: |
-          using Pkg
-          Pkg.dev(Pkg.PackageSpec(path=pwd()))
-          Pkg.instantiate()
+      
+      # Step 1: 帮你把当前包安装好 (替代了你手动写的 Pkg.dev)
+      - name: Install package
+        uses: julia-actions/julia-buildpkg@v1
+      
+      # Step 2: 专门用于构建文档的 Action (比手动写脚本更稳)
       - name: Build and Deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # 通常不需要，除非你在做跨仓库部署
         shell: julia --project=docs {0}
-        run: using Documenter; include("docs/make.jl")
+        run: |
+          using Pkg
+          Pkg.develop(PackageSpec(path=pwd())) # 把主包链接到文档环境
+          Pkg.instantiate()
+          using Documenter: doctest
+          using Junimo
+          doctest(Junimo) # 可选：运行文档里的测试例子
+          include("docs/make.jl")
