@@ -1,6 +1,7 @@
 using Statistics
 
 export gof
+export GofResult
 
 function _paired_nonmissing(obs, sim)
   # Pairwise filter missing to avoid misalignment.
@@ -38,21 +39,105 @@ function _maybe_round!(res::AbstractDict{String, V}, n_small::Union{Nothing, Int
 end
 
 """
-    gof(obs, sim; n_small=nothing)
+    GofResult(data; colorize=true)
+
+Dictionary-like GoF result with colored printing.
+Positive values print in red and negative values in blue when `colorize=true`.
+It supports standard `Dict` access patterns such as `res["KGE"]` and `pairs(res)`.
+"""
+struct GofResult{V, D<:AbstractDict{String, V}} <: AbstractDict{String, V}
+  data::D
+  colorize::Bool
+end
+
+function GofResult(data::D; colorize::Bool=true) where {V, D<:AbstractDict{String, V}}
+  return GofResult{V, D}(data, colorize)
+end
+
+Base.length(res::GofResult) = length(res.data)
+Base.iterate(res::GofResult, state...) = iterate(res.data, state...)
+Base.haskey(res::GofResult, key) = haskey(res.data, key)
+Base.getindex(res::GofResult, key) = getindex(res.data, key)
+Base.setindex!(res::GofResult, value, key) = setindex!(res.data, value, key)
+Base.get(res::GofResult, key, default) = get(res.data, key, default)
+Base.keys(res::GofResult) = keys(res.data)
+Base.values(res::GofResult) = values(res.data)
+Base.pairs(res::GofResult) = pairs(res.data)
+
+function _show_gof_value(io::IO, value, colorize::Bool)
+  if colorize && value isa Real && isfinite(value) && !iszero(value) && get(io, :color, false)
+    color = value > 0 ? :red : :blue
+    return printstyled(io, value; color=color)
+  end
+  return show(io, value)
+end
+
+function _show_gof_result_inline(io::IO, res::GofResult)
+  print(io, "Dict(")
+  first = true
+  for (k, v) in pairs(res.data)
+    if first
+      first = false
+    else
+      print(io, ", ")
+    end
+    show(io, k)
+    print(io, "=>")
+    _show_gof_value(io, v, res.colorize)
+  end
+  return print(io, ")")
+end
+
+function _show_gof_result_pretty(io::IO, res::GofResult)
+  show(io, typeof(res.data))
+  n = length(res.data)
+  print(io, " with ", n, " entries:")
+  if n == 0
+    return nothing
+  end
+  print(io, "\n")
+  i = 0
+  for (k, v) in pairs(res.data)
+    i += 1
+    print(io, "  ")
+    show(io, k)
+    print(io, " => ")
+    _show_gof_value(io, v, res.colorize)
+    if i < n
+      print(io, "\n")
+    end
+  end
+  return nothing
+end
+
+Base.show(io::IO, res::GofResult) = _show_gof_result_inline(io, res)
+Base.show(io::IO, ::MIME"text/plain", res::GofResult) = _show_gof_result_pretty(io, res)
+
+function _finish_gof_result(
+  res::AbstractDict{String, V},
+  n_small::Union{Nothing, Int},
+  colorize::Bool
+) where {V}
+  res = _maybe_round!(res, n_small)
+  return colorize ? GofResult(res; colorize=true) : res
+end
+
+"""
+    gof(obs, sim; n_small=nothing, colorize=true)
 
 Composite goodness-of-fit (GoF) metrics comparing simulated `sim` with observed `obs`.
 Missing values are removed pairwise: iterate `zip(obs, sim)` and keep only non-missing pairs.
 
 # Returns
 
-- `KGE`, `NSE`, `R`, `R2`
-- `RMSE`, `MAE`, `bias`, `bias_perc`
-- `n`
+- A `GofResult` (when `colorize=true`) or a `Dict` (when `colorize=false`) with:
+  `KGE`, `NSE`, `R`, `R2`, `RMSE`, `MAE`, `bias`, `bias_perc`, `n`
 
 # Arguments
 
 - `obs`, `sim`: Numeric sequences or scalars, may include `missing`
 - `n_small`: Optional number of decimal digits to round to; `nothing` keeps full precision
+- `colorize`: Whether to enable colored printing for GoF results
 
 # Formulae
 
@@ -79,7 +164,7 @@ Missing values are removed pairwise: iterate `zip(obs, sim)` and keep only non-m
 - Willmott, C. J., & Matsuura, K. (2005). Advantages of the mean absolute error (MAE).
   *Climate Research*, 30, 79-82. doi:10.3354/cr030079
 """
-function gof(obs, sim; n_small::Union{Nothing, Int}=nothing)
+function gof(obs, sim; n_small::Union{Nothing, Int}=nothing, colorize::Bool=true)
   obs, sim = _paired_nonmissing(obs, sim)
 
   n = length(obs)
@@ -90,7 +175,7 @@ function gof(obs, sim; n_small::Union{Nothing, Int}=nothing)
       "slp"=>NaN, "pvalue"=>NaN, "intercept"=>NaN,
       "n"=>n
     )
-    return _maybe_round!(res, n_small)
+    return _finish_gof_result(res, n_small, colorize)
   end
 
   # Single pass: mean, variance, covariance, and error totals.
@@ -134,7 +219,7 @@ function gof(obs, sim; n_small::Union{Nothing, Int}=nothing)
       "slp"=>NaN, "pvalue"=>NaN, "intercept"=>NaN,
       "n"=>n
     )
-    return _maybe_round!(res, n_small)
+    return _finish_gof_result(res, n_small, colorize)
   end
 
   ss_obs = m2_obs
@@ -169,5 +254,5 @@ function gof(obs, sim; n_small::Union{Nothing, Int}=nothing)
     "n"=>n
   )
 
-  return _maybe_round!(res, n_small)
+  return _finish_gof_result(res, n_small, colorize)
 end

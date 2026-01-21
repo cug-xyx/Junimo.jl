@@ -1,4 +1,4 @@
-# Gof
+# ShowGof
 
 ```@meta
 CurrentModule = Junimo
@@ -25,7 +25,7 @@ ax = Axis(
   fig[1, 1], titlefont = :regular,
   xlabel = "Yobs (-)", ylabel = "Ysim (-)"
 )
-scatter!(ax, yobs, ysim; markersize=10, color=:lightblue)
+scatter!(ax, yobs, ysim; markersize=10, color=:black)
 lines!(ax, [0, 6], [0, 6]; color=:red, linestyle=:dash, linewidth=2)
 show_gof!(
   ax, 5.3, 0.1,
@@ -33,7 +33,7 @@ show_gof!(
   metrics = ["R2", "RMSE"],
   n=2,
   align=(:right, :bottom),
-  color=:black
+  color=:red
 )
 fig
 ```

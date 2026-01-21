@@ -32,7 +32,7 @@ YuxuanXie
 ## Function Categories
 
 - Utils: colored console output helpers (`cprint`, `red`, `green`, `blue`, `purple` and macros)
-- Statistics: goodness-of-fit metrics (`gof`)
+- Statistics: goodness-of-fit metrics (`gof`, colorized `GofResult` output)
 - Visualize: GoF annotation helpers for Makie (`show_gof!`)
 
 ## Installation
@@ -67,4 +67,4 @@ GPL-3.0-only
 
 ## TODO
 
-- [ ] colorful gof output (e.g., red for positive number, blue for negative number)
+- [x] colorful `gof` output (positive in red, negative in blue; `colorize=true`)
