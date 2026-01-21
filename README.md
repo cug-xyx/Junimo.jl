@@ -1,4 +1,4 @@
-# Junimo.jl <a href="https://cug-xyx.github.io/Junimo.jl/index.html"><img src="docs/src/assets/logo.png" align="right" height="138"/></a>
+# Junimo.jl<a href="https://cug-xyx.github.io/Junimo.jl/index.html"><img src="docs/src/assets/logo.png" align="right" height="138"/></a>
 
 [![Tests](https://github.com/cug-xyx/Junimo.jl/actions/workflows/tests.yml/badge.svg)](https://github.com/cug-xyx/Junimo.jl/actions/workflows/tests.yml)
 [![Documentation](https://github.com/cug-xyx/Junimo.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/cug-xyx/Junimo.jl/actions/workflows/ci.yml)
@@ -7,20 +7,33 @@
 
 ## Table of Contents
 
-- [Junimo.jl ](#junimojl-)
+- [Junimo.jl](#junimojl)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
+  - [Author](#author)
+  - [Function Categories](#function-categories)
   - [Installation](#installation)
   - [Quick Start](#quick-start)
   - [Testing](#testing)
   - [Documentation](#documentation)
   - [Contributing](#contributing)
   - [License](#license)
+  - [TODO](#todo)
 
 ## Overview
 
 `Junimo.jl` gathers practical helpers and conventions into a single package.
 It favors small, composable utilities that can be reused across projects and scripts.
+
+## Author
+
+YuxuanXie
+
+## Function Categories
+
+- Utils: colored console output helpers (`cprint`, `red`, `green`, `blue`, `purple` and macros)
+- Statistics: goodness-of-fit metrics (`gof`)
+- Visualize: GoF annotation helpers for Makie (`show_gof!`)
 
 ## Installation
 
@@ -51,3 +64,7 @@ Contributions are welcome. Please open an issue to discuss ideas before submitti
 ## License
 
 GPL-3.0-only
+
+## TODO
+
+- [ ] colorful gof output (e.g., red for positive number, blue for negative number)

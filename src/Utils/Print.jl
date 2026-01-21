@@ -1,6 +1,7 @@
 export 
   cprint,
-  red, green, blue, purple
+  red, green, blue, purple,
+  @red, @green, @blue, @purple
 
 const ANSI_PREFIX = "\x1b["
 const ANSI_RESET = "\x1b[0m"
@@ -53,6 +54,24 @@ red(stderr, "Error: Data mismatch detected!")
 @inline red(io::IO, text::AbstractString) = cprint(io, text, ANSI_RED)
 @inline red(text::AbstractString) = cprint(stdout, text, ANSI_RED)
 
+"""
+    @red text
+    @red io text
+
+Print a line of text in Red (ANSI 31).
+
+This macro expands to `red(text)` or `red(io, text)`.
+
+# Examples
+```julia
+@red "Error: Data mismatch detected!"
+@red stderr "Error: Data mismatch detected!"
+```
+"""
+macro red(args...)
+    return Expr(:call, :red, map(esc, args)...)
+end
+
 
 """
     green(text)
@@ -70,6 +89,24 @@ green(stderr, "Processing complete. Junimos are happy.")
 """
 @inline green(io::IO, text::AbstractString) = cprint(io, text, ANSI_GREEN)
 @inline green(text::AbstractString) = cprint(stdout, text, ANSI_GREEN)
+
+"""
+    @green text
+    @green io text
+
+Print a line of text in Green (ANSI 32).
+
+This macro expands to `green(text)` or `green(io, text)`.
+
+# Examples
+```julia
+@green "Processing complete. Junimos are happy."
+@green stderr "Processing complete. Junimos are happy."
+```
+"""
+macro green(args...)
+    return Expr(:call, :green, map(esc, args)...)
+end
 
 
 """
@@ -89,6 +126,24 @@ blue(stderr, "Hydrology data missing.")
 @inline blue(io::IO, text::AbstractString) = cprint(io, text, ANSI_BLUE)
 @inline blue(text::AbstractString) = cprint(stdout, text, ANSI_BLUE)
 
+"""
+    @blue text
+    @blue io text
+
+Print a line of text in Blue (ANSI 34).
+
+This macro expands to `blue(text)` or `blue(io, text)`.
+
+# Examples
+```julia
+@blue "Lake level stabilized."
+@blue stderr "Hydrology data missing."
+```
+"""
+macro blue(args...)
+    return Expr(:call, :blue, map(esc, args)...)
+end
+
 
 """
     purple(text)
@@ -106,3 +161,21 @@ purple(stderr, "Optimization finished! Results are Iridium quality.")
 """
 @inline purple(io::IO, text::AbstractString) = cprint(io, text, ANSI_PURPLE)
 @inline purple(text::AbstractString) = cprint(stdout, text, ANSI_PURPLE)
+
+"""
+    @purple text
+    @purple io text
+
+Print a line of text in Purple (ANSI 35).
+
+This macro expands to `purple(text)` or `purple(io, text)`.
+
+# Examples
+```julia
+@purple "Optimization finished! Results are Iridium quality."
+@purple stderr "Optimization finished! Results are Iridium quality."
+```
+"""
+macro purple(args...)
+    return Expr(:call, :purple, map(esc, args)...)
+end

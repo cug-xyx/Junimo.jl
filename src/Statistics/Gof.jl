@@ -1,0 +1,173 @@
+using Statistics
+
+export gof
+
+function _paired_nonmissing(obs, sim)
+  # Pairwise filter missing to avoid misalignment.
+  if obs isa Number || obs === missing
+    obs = (obs,)
+  end
+  if sim isa Number || sim === missing
+    sim = (sim,)
+  end
+  obs_vec = Float64[]
+  sim_vec = Float64[]
+  if Base.IteratorSize(obs) isa Base.HasLength && Base.IteratorSize(sim) isa Base.HasLength
+    n_hint = min(length(obs), length(sim))
+    sizehint!(obs_vec, n_hint)
+    sizehint!(sim_vec, n_hint)
+  end
+  for (o, s) in zip(obs, sim)
+    if !(ismissing(o) || ismissing(s))
+      push!(obs_vec, float(o))
+      push!(sim_vec, float(s))
+    end
+  end
+  return obs_vec, sim_vec
+end
+
+function _maybe_round!(res::AbstractDict{String, V}, n_small::Union{Nothing, Int}) where {V}
+  if n_small !== nothing
+    for (k, v) in res
+      if v isa Real
+        res[k] = round(v, digits=n_small)
+      end
+    end
+  end
+  return res
+end
+
+"""
+    gof(obs, sim; n_small=nothing)
+
+Composite goodness-of-fit (GoF) metrics comparing simulated `sim` with observed `obs`.
+Missing values are removed pairwise: iterate `zip(obs, sim)` and keep only non-missing pairs.
+
+# Returns
+
+- `KGE`, `NSE`, `R`, `R2`
+- `RMSE`, `MAE`, `bias`, `bias_perc`
+- `n`
+
+# Arguments
+
+- `obs`, `sim`: Numeric sequences or scalars, may include `missing`
+- `n_small`: Optional number of decimal digits to round to; `nothing` keeps full precision
+
+# Formulae
+
+- ``RMSE = \\sqrt{\\frac{1}{n} \\sum (s_i - o_i)^2}``
+- ``MAE = \\frac{1}{n} \\sum |s_i - o_i|``
+- ``bias = \\bar{s} - \\bar{o}``
+- ``bias\\_perc = 100 \\cdot bias / \\bar{o}``
+- ``NSE = 1 - \\frac{\\sum (s_i - o_i)^2}{\\sum (o_i - \\bar{o})^2}``
+- ``KGE = 1 - \\sqrt{(r-1)^2 + (\\alpha-1)^2 + (\\beta-1)^2}``
+  where ``r = cor(o, s)``, ``\\alpha = \\sigma_s / \\sigma_o``, ``\\beta = \\bar{s}/\\bar{o}``
+
+# Stability and edge cases
+
+- When `n <= 2`, `KGE`/`NSE`/`R`/`R2` return `NaN`
+- When ``\\bar{o} = 0`` or ``\\sigma_o = 0``, the related ratio terms return `NaN`
+
+# References
+
+- Nash, J. E., & Sutcliffe, J. V. (1970). River flow forecasting through conceptual models.
+  *Journal of Hydrology*, 10(3), 282-290. doi:10.1016/0022-1694(70)90255-6
+- Gupta, H. V., Kling, H., Yilmaz, K. K., & Martinez, G. F. (2009). Decomposition of the mean
+  squared error and NSE: Toward improved diagnostic evaluation. *Water Resources Research*, 45,
+  W09417. doi:10.1029/2009WR007200
+- Willmott, C. J., & Matsuura, K. (2005). Advantages of the mean absolute error (MAE).
+  *Climate Research*, 30, 79-82. doi:10.3354/cr030079
+"""
+function gof(obs, sim; n_small::Union{Nothing, Int}=nothing)
+  obs, sim = _paired_nonmissing(obs, sim)
+
+  n = length(obs)
+  if n == 0
+    res = Dict(
+      "KGE"=>NaN, "NSE"=>NaN, "R2"=>NaN, "R"=>NaN,
+      "RMSE"=>NaN, "MAE"=>NaN, "bias"=>NaN, "bias_perc"=>NaN,
+      "slp"=>NaN, "pvalue"=>NaN, "intercept"=>NaN,
+      "n"=>n
+    )
+    return _maybe_round!(res, n_small)
+  end
+
+  # Single pass: mean, variance, covariance, and error totals.
+  mean_obs = 0.0
+  mean_sim = 0.0
+  m2_obs = 0.0
+  m2_sim = 0.0
+  cov_os = 0.0
+  sum_sq = 0.0
+  sum_abs = 0.0
+
+  i = 0
+  @inbounds for idx in eachindex(obs)
+    i += 1
+    o = obs[idx]
+    s = sim[idx]
+    diff = s - o
+    sum_sq += diff * diff
+    sum_abs += abs(diff)
+
+    # Welford update: numerically stable and avoids extra passes.
+    delta_o = o - mean_obs
+    mean_obs += delta_o / i
+    delta_s = s - mean_sim
+    mean_sim += delta_s / i
+    m2_obs += delta_o * (o - mean_obs)
+    m2_sim += delta_s * (s - mean_sim)
+    cov_os += delta_o * (s - mean_sim)
+  end
+
+  RMSE = sqrt(sum_sq / n)
+  MAE = sum_abs / n
+  bias = mean_sim - mean_obs
+  bias_perc = iszero(mean_obs) ? NaN : bias / mean_obs * 100
+
+  # sample too small
+  if n <= 2
+    res = Dict(
+      "KGE"=>NaN, "NSE"=>NaN, "R2"=>NaN, "R"=>NaN,
+      "RMSE"=>RMSE, "MAE"=>MAE, "bias"=>bias, "bias_perc"=>bias_perc,
+      "slp"=>NaN, "pvalue"=>NaN, "intercept"=>NaN,
+      "n"=>n
+    )
+    return _maybe_round!(res, n_small)
+  end
+
+  ss_obs = m2_obs
+  NSE = ss_obs > 0 ? 1 - sum_sq / ss_obs : NaN
+
+  R = NaN
+  R2 = NaN
+  KGE = NaN
+  if m2_obs > 0 && m2_sim > 0
+    var_obs = m2_obs / (n - 1)
+    var_sim = m2_sim / (n - 1)
+    std_obs = sqrt(var_obs)
+    std_sim = sqrt(var_sim)
+    cov = cov_os / (n - 1)
+    if std_obs > 0 && std_sim > 0
+      R = cov / (std_obs * std_sim)
+      if isfinite(R)
+        R = clamp(R, -1.0, 1.0)
+        R2 = R^2
+      end
+      alpha = std_sim / std_obs
+      beta = iszero(mean_obs) ? NaN : mean_sim / mean_obs
+      if isfinite(R) && isfinite(alpha) && isfinite(beta)
+        KGE = 1 - sqrt((R - 1)^2 + (alpha - 1)^2 + (beta - 1)^2)
+      end
+    end
+  end
+
+  res = Dict(
+    "KGE"=>KGE, "NSE"=>NSE, "R2"=>R2, "R"=>R,
+    "RMSE"=>RMSE, "MAE"=>MAE, "bias"=>bias, "bias_perc"=>bias_perc,
+    "n"=>n
+  )
+
+  return _maybe_round!(res, n_small)
+end

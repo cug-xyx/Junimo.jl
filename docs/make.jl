@@ -6,10 +6,15 @@ makedocs(
   sitename="Junimo.jl",
   pages = [
     "index.md",
-    "Print" => "Utils/Print.md",
-    #   "Subsection" => [
-    #       ...
-    # ]
+    "Statistics" => [
+        "Statistics/Gof.md"
+    ],
+    "Utils" => [
+      "Utils/Print.md"
+    ],
+    "Visualize" => [
+      "Visualize/ShowGof.md"
+    ]
   ]
 )
 

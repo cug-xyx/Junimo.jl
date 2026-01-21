@@ -4,6 +4,9 @@ module Junimo
 
   include("./Utils/Print.jl")
 
+  include("./Statistics/Gof.jl")
+
+  include("./Visualize/ShowGof.jl")
 
   function __init__()
     fortunes = [
