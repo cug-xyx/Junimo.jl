@@ -1,7 +1,3 @@
 # Junimo.jl
 
-```@contents
-```
-
 ## Functions
-
