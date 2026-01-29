@@ -5,27 +5,21 @@ export show_gof!
 """
     show_gof!(ax, x, y, obs, sim; metrics=nothing, n=nothing, align=(:right, :bottom), color=:black)
 
-Render GoF metrics at a given position on an existing axis.
-The metrics are computed internally via `gof(obs, sim)` and then formatted as
-multiline text.
+Render GoF metrics as multiline text at a given position on an existing axis.
 
-# Arguments
-
-- `ax`: Makie axis to draw on
-- `x`, `y`: Text position coordinates
-- `obs`, `sim`: Observed and simulated values (scalars or sequences)
-
-# Keywords
-
-- `metrics`: List of metric keys to display (e.g. `["R2", "NSE"]`).
-  If `nothing`, defaults to `["R2", "NSE", "KGE", "RMSE", "bias"]`.
-- `n`: Decimal digits to round to; forwarded to `gof(...; n_small=n)`.
-- `align`: Text alignment tuple passed to `text!`.
-- `color`: Text color passed to `text!`.
+# Inputs
+  - ax: Makie axis to draw on
+  - x, y: text position coordinates
+  - obs: observed values
+  - sim: simulated values
+  - metrics: list of metric keys to display; if `nothing`, defaults to
+    `["R2", "NSE", "KGE", "RMSE", "bias"]`
+  - n: decimal digits to round to; forwarded to `gof(...; n_small=n)`
+  - align: text alignment tuple passed to `text!`
+  - color: text color passed to `text!`
 
 # Notes
-
-- Unknown metric keys are shown as `NaN`.
+  - Metrics are computed via `gof(obs, sim)` and formatted as multiline text.
 """
 function show_gof!(
   ax,
@@ -46,7 +40,9 @@ function show_gof!(
   @inbounds for i in eachindex(metrics_str)
     key = metrics_str[i]
     val = get(gof_res, key, NaN)
-    lines[i] = string(key, "=", val)
+    label = key == "R2" ? "R²" : key
+    val_str = key == "PBIAS" ? string(val, "%") : string(val)
+    lines[i] = string(label, "=", val_str)
   end
 
   text!(

@@ -6,8 +6,13 @@ makedocs(
   sitename="Junimo.jl",
   pages = [
     "index.md",
+    "Model" => [
+      "Plant Physiology" => [
+        "Model/PlantPhysiology/OptModel.md"
+      ]
+    ],
     "Statistics" => [
-        "Statistics/Gof.md"
+      "Statistics/Gof.md"
     ],
     "Utils" => [
       "Utils/Print.md"

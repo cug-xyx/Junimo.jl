@@ -33,6 +33,9 @@ YuxuanXie
 - Utils: colored console output helpers (`cprint`, `red`, `green`, `blue`, `purple` and macros)
 - Statistics: goodness-of-fit metrics (`gof`, colorized `GofResult` output)
 - Visualize: GoF annotation helpers for Makie (`show_gof!`)
+- Model
+  - Plant Physiology
+    - **Opt model** (`OptModel`, Hu et al., 2025): an eco-evolutionary optimality-based model that simulates vegetation GPP, gs, Vcmax from LAI and climate drivers.
 
 ## Installation
 

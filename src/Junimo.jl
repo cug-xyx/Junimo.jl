@@ -8,6 +8,8 @@ module Junimo
 
   include("./Visualize/ShowGof.jl")
 
+  include("./Model/PlantPhysiology/OptModel.jl")
+
   function __init__()
     fortunes = [
       ("✨ The spirits are very happy today! They will do their best to shower everyone with good fortune.", :magenta),

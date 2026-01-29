@@ -125,44 +125,41 @@ end
 """
     gof(obs, sim; n_small=nothing, colorize=true)
 
-Composite goodness-of-fit (GoF) metrics comparing simulated `sim` with observed `obs`.
-Missing values are removed pairwise: iterate `zip(obs, sim)` and keep only non-missing pairs.
+Compute goodness-of-fit (GOF) metrics comparing simulated `sim` with observed `obs`.
 
-# Returns
+# Inputs
+  - obs: observed values, scalar or array, may include `missing`
+  - sim: simulated values, scalar or array, may include `missing`
+  - n_small: number of decimal digits to round to; `nothing` keeps full precision
+  - colorize: whether to return a colored `GofResult` for pretty printing
 
-- A `GofResult` (when `colorize=true`) or a `Dict` (when `colorize=false`) with:
-  `KGE`, `NSE`, `R`, `R2`, `RMSE`, `MAE`, `bias`, `bias_perc`, `n`
+# Outputs
+  - result: `GofResult` (when `colorize=true`) or `Dict{String, Float64}` (when `colorize=false`)
+    with keys: `KGE`, `NSE`, `R`, `R2`, `RMSE`, `MAE`, `bias`, `PBIAS`, `n`
 
-# Arguments
+# Rules for stability:
+  - Missing values are removed pairwise via `zip(obs, sim)`.
+  - If `n <= 2`, `KGE`, `NSE`, `R`, and `R2` return `NaN`.
+  - If `mean(obs) == 0` or `std(obs) == 0`, ratio-based terms return `NaN`.
 
-- `obs`, `sim`: Numeric sequences or scalars, may include `missing`
-- `n_small`: Optional number of decimal digits to round to; `nothing` keeps full precision
-- `colorize`: Whether to enable colored printing for GoF results
-
-# Formulae
-
-- ``RMSE = \\sqrt{\\frac{1}{n} \\sum (s_i - o_i)^2}``
-- ``MAE = \\frac{1}{n} \\sum |s_i - o_i|``
-- ``bias = \\bar{s} - \\bar{o}``
-- ``bias\\_perc = 100 \\cdot bias / \\bar{o}``
-- ``NSE = 1 - \\frac{\\sum (s_i - o_i)^2}{\\sum (o_i - \\bar{o})^2}``
-- ``KGE = 1 - \\sqrt{(r-1)^2 + (\\alpha-1)^2 + (\\beta-1)^2}``
-  where ``r = cor(o, s)``, ``\\alpha = \\sigma_s / \\sigma_o``, ``\\beta = \\bar{s}/\\bar{o}``
-
-# Stability and edge cases
-
-- When `n <= 2`, `KGE`/`NSE`/`R`/`R2` return `NaN`
-- When ``\\bar{o} = 0`` or ``\\sigma_o = 0``, the related ratio terms return `NaN`
+# Formula
+  - ``RMSE = \\sqrt{\\frac{1}{n} \\sum (s_i - o_i)^2}``
+  - ``MAE = \\frac{1}{n} \\sum |s_i - o_i|``
+  - ``bias = \\bar{s} - \\bar{o}``
+  - ``bias\\_perc = 100 \\cdot bias / \\bar{o}``
+  - ``NSE = 1 - \\frac{\\sum (s_i - o_i)^2}{\\sum (o_i - \\bar{o})^2}``
+  - ``KGE = 1 - \\sqrt{(r-1)^2 + (\\alpha-1)^2 + (\\beta-1)^2}``
+    where ``r = cor(o, s)``, ``\\alpha = \\sigma_s / \\sigma_o``,
+    ``\\beta = \\bar{s}/\\bar{o}``
 
 # References
-
-- Nash, J. E., & Sutcliffe, J. V. (1970). River flow forecasting through conceptual models.
-  *Journal of Hydrology*, 10(3), 282-290. doi:10.1016/0022-1694(70)90255-6
-- Gupta, H. V., Kling, H., Yilmaz, K. K., & Martinez, G. F. (2009). Decomposition of the mean
-  squared error and NSE: Toward improved diagnostic evaluation. *Water Resources Research*, 45,
-  W09417. doi:10.1029/2009WR007200
-- Willmott, C. J., & Matsuura, K. (2005). Advantages of the mean absolute error (MAE).
-  *Climate Research*, 30, 79-82. doi:10.3354/cr030079
+  - Nash, J. E., and Sutcliffe, J. V. (1970). River flow forecasting through conceptual models.
+    Journal of Hydrology, 10(3), 282-290. doi:10.1016/0022-1694(70)90255-6
+  - Gupta, H. V., Kling, H., Yilmaz, K. K., and Martinez, G. F. (2009). Decomposition of the mean
+    squared error and NSE: Toward improved diagnostic evaluation. Water Resources Research, 45,
+    W09417. doi:10.1029/2009WR007200
+  - Willmott, C. J., and Matsuura, K. (2005). Advantages of the mean absolute error (MAE).
+    Climate Research, 30, 79-82. doi:10.3354/cr030079
 """
 function gof(obs, sim; n_small::Union{Nothing, Int}=nothing, colorize::Bool=true)
   obs, sim = _paired_nonmissing(obs, sim)
@@ -171,7 +168,7 @@ function gof(obs, sim; n_small::Union{Nothing, Int}=nothing, colorize::Bool=true
   if n == 0
     res = Dict(
       "KGE"=>NaN, "NSE"=>NaN, "R2"=>NaN, "R"=>NaN,
-      "RMSE"=>NaN, "MAE"=>NaN, "bias"=>NaN, "bias_perc"=>NaN,
+      "RMSE"=>NaN, "MAE"=>NaN, "bias"=>NaN, "PBIAS"=>NaN,
       "slp"=>NaN, "pvalue"=>NaN, "intercept"=>NaN,
       "n"=>n
     )
@@ -209,13 +206,13 @@ function gof(obs, sim; n_small::Union{Nothing, Int}=nothing, colorize::Bool=true
   RMSE = sqrt(sum_sq / n)
   MAE = sum_abs / n
   bias = mean_sim - mean_obs
-  bias_perc = iszero(mean_obs) ? NaN : bias / mean_obs * 100
+  PBIAS = iszero(mean_obs) ? NaN : bias / mean_obs * 100
 
   # sample too small
   if n <= 2
     res = Dict(
       "KGE"=>NaN, "NSE"=>NaN, "R2"=>NaN, "R"=>NaN,
-      "RMSE"=>RMSE, "MAE"=>MAE, "bias"=>bias, "bias_perc"=>bias_perc,
+      "RMSE"=>RMSE, "MAE"=>MAE, "bias"=>bias, "PBIAS"=>PBIAS,
       "slp"=>NaN, "pvalue"=>NaN, "intercept"=>NaN,
       "n"=>n
     )
@@ -250,7 +247,7 @@ function gof(obs, sim; n_small::Union{Nothing, Int}=nothing, colorize::Bool=true
 
   res = Dict(
     "KGE"=>KGE, "NSE"=>NSE, "R2"=>R2, "R"=>R,
-    "RMSE"=>RMSE, "MAE"=>MAE, "bias"=>bias, "bias_perc"=>bias_perc,
+    "RMSE"=>RMSE, "MAE"=>MAE, "bias"=>bias, "PBIAS"=>PBIAS,
     "n"=>n
   )
 

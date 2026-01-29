@@ -1,9 +1,9 @@
-docs/build
-
-
 .vscode
-
 desktop.ini
+
+docs/build
+doc/*
 
 Manifest.toml
 Prompts.md
+TODO.md
