@@ -3,6 +3,7 @@ module Junimo
   using Random
 
   include("./Utils/Print.jl")
+  include("./Utils/DownGOSIF.jl")
 
   include("./Statistics/Gof.jl")
 

@@ -15,7 +15,8 @@ makedocs(
       "Statistics/Gof.md"
     ],
     "Utils" => [
-      "Utils/Print.md"
+      "Utils/Print.md",
+      "Utils/DownGOSIF.md"
     ],
     "Visualize" => [
       "Visualize/ShowGof.md"

@@ -30,7 +30,9 @@ YuxuanXie
 
 ## Function Categories
 
-- Utils: colored console output helpers (`cprint`, `red`, `green`, `blue`, `purple` and macros)
+- Utils:
+  - colored console output helpers (`cprint`, `red`, `green`, `blue`, `purple` and macros)
+  - GOSIFv2 8-day downloader (`DownGOSIF`)
 - Statistics: goodness-of-fit metrics (`gof`, colorized `GofResult` output)
 - Visualize: GoF annotation helpers for Makie (`show_gof!`)
 - Model
